@@ -3,28 +3,31 @@
 #include "reg.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
 
-#define MEMSEG_SIZE (65536)
-
-typedef struct memseg
+typedef struct seg
 {
-	uint8_t seg[MEMSEG_SIZE];
-	uint64_t seg_addr;
-} memseg_t;
+	uint8_t buf[65536];
+} seg_t;
 
-void memseg_init(memseg_t *p);
-
-typedef struct mem
+typedef struct seg_tab
 {
-	memseg_t *segs;
-	size_t seg_count;
-} mem_t;
+	union
+	{
+		struct seg_tab *tab;
+		struct seg *seg;
+	} entry[65536];
+} seg_tab_t;
 
-mem_t* loadFromFile(FILE *f);
-uint16_t mem_fetch_word(mem_t *mem, comp_t *comp)
-{
-	uint16_t inst = 0;
-	inst |= mem->segs[0].seg[comp->pc++] << 8;
-	inst |= mem->segs[0].seg[comp->pc++];
-	return inst;
-}
+extern seg_tab_t seg_tab_lvl1;
+
+void mem_init();
+seg_t* mem_check(uint64_t addr);
+seg_t* mem_create(uint64_t addr);
+void mem_destroy(uint64_t addr);
+int mem_read(uint64_t addr);
+int mem_read_ex(seg_t *seg, uint64_t addr);
+int mem_write(uint64_t addr, uint8_t val);
+bool mem_dump(uint64_t addr);
+
+bool mem_read_inst(uint64_t addr, uint16_t *out);

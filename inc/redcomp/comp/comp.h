@@ -17,4 +17,6 @@ typedef struct comp
 	flags_t fl;
 } comp_t;
 
-void comp_init(comp_t *comp);
+extern comp_t comp;
+
+void comp_init();
