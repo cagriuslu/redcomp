@@ -10,6 +10,7 @@ comp_t comp;
 mem_t *mem;
 uint16_t inst;
 uint16_t oper[MAC_OPERLEN];
+struct InstructionParameters instParams;
 
 int main(int argc, char **argv)
 {
@@ -28,6 +29,7 @@ int main(int argc, char **argv)
 
 		uint8_t opcode1 = (inst >> 8) & 0xFF;
 		enum InstructionPack pack = opcode1_pack_table[opcode1];
+		unpack_inst(inst, pack, &instParams);
 	}
 	printf("\n");
 
