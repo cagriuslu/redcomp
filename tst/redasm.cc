@@ -1,4 +1,4 @@
-#include "redcomp/Utils.hh"
+#include "redcomp/asm/Utils.hh"
 #include "redcomp/asm/Address.hh"
 #include "redcomp/asm/AssemblyDirective.hh"
 #include "redcomp/asm/LabelStorage.hh"
