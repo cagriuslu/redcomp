@@ -1,7 +1,9 @@
 #include "redcomp/common/instruction.h"
 
+// This table has to be kept ordered with respect to opcode1
 const struct Instruction instructions[] =
 {
+	{"stop",     IP_MG1C8_Z8,  IT___,         0x00, 0x00},
 	{"load",     IP_MG1C8_NBITS2_INSTL2_IX2_Z2,  IT_NBITS__IX__INT,         0x01, 0x00},
 	{"load",     IP_MG1C8_NBITS2_INSTL2_IX2_Z2,  IT_NBITS__IX__B_INT_B,     0x02, 0x00},
 	{"load",     IP_MG1C8_NBITS2_IX2_Z4,         IT_NBITS__IX__B_VI_U16_B,  0x03, 0x00},
@@ -246,3 +248,5 @@ const struct Instruction instructions[] =
 	{"clr",      IP_MG1C8_Z6_SX2,     IT___SX, 0xF2, 0x00},
 	{"",         IP_UNKNOWN,          IT_UNKNOWN, 0, 0},
 };
+
+const size_t instructionCount = sizeof(instructions) / sizeof(struct Instruction) - 1;

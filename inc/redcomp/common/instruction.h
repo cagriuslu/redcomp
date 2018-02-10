@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stdint.h>
+#include <stdlib.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -122,6 +123,7 @@ struct Instruction
 };
 
 extern const struct Instruction instructions[];
+extern const size_t instructionCount;
 
 #ifdef __cplusplus
 }
