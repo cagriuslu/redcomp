@@ -125,6 +125,25 @@ struct Instruction
 extern const struct Instruction instructions[];
 extern const size_t instructionCount;
 
+struct InstructionParameters
+{
+	uint8_t opcode1;
+	uint8_t opcode2;
+	uint8_t nfbits;
+	uint8_t instlen;
+	uint8_t stk1;
+	uint8_t stk2;
+	uint8_t idx1;
+	uint8_t idx2;
+	uint8_t reg;
+	uint8_t shfcnt;
+	uint8_t inccnt;
+	uint64_t integer;
+	uint16_t unsigned16;
+	int16_t signed16;
+	double floating;
+};
+
 #ifdef __cplusplus
 }
 #endif

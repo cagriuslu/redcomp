@@ -278,24 +278,7 @@ void fillRestArrayFloating(uint8_t *array, uint8_t instlen, double floating)
 	}
 }
 
-struct InstructionParameters
-{
-	uint8_t opcode1;
-	uint8_t opcode2;
-	uint8_t nfbits = 0;
-	uint8_t instlen = 0;
-	uint8_t stk1 = 0;
-	uint8_t stk2 = 0;
-	uint8_t idx1 = 0;
-	uint8_t idx2 = 0;
-	uint8_t reg = 0;
-	uint8_t shfcnt = 0;
-	uint8_t inccnt = 0;
-	uint64_t integer = 0;
-	uint16_t unsigned16 = 0;
-	int16_t signed16 = 0;
-	double floating = 0.0;
-} instructionParameters;
+struct InstructionParameters instructionParameters;
 
 std::pair<bool,std::vector<uint8_t>> redcomp::Instruction::parse(std::string line)
 {
