@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Utils.hh"
+#include "../common/instruction.h"
 #include <cstdint>
 #include <iostream>
 #include <limits>
