@@ -5,8 +5,52 @@
 #include <stdio.h>
 
 uint16_t inst;
-uint16_t oper[4];
+uint8_t oper[8];
 struct InstructionParameters instParams;
+
+bool fetchOper()
+{
+	int result;
+	size_t i;
+
+	for (i = 0; i < 8; ++i)
+		oper[i] = 0;
+
+	switch (instParams.instlen)
+	{
+	case IL_1x16:
+		return true;
+	case IL_2x16:
+		for (i = 0; i < 2; ++i)
+		{
+			result = mem_read(comp.pc++);
+			if (result == -1)
+				return false;
+			oper[i] = result;
+		}
+		return true;
+	case IL_3x16:
+		for (i = 0; i < 4; ++i)
+		{
+			result = mem_read(comp.pc++);
+			if (result == -1)
+				return false;
+			oper[i] = result;
+		}
+		return true;
+	case IL_5x16:
+		for (i = 0; i < 8; ++i)
+		{
+			result = mem_read(comp.pc++);
+			if (result == -1)
+				return false;
+			oper[i] = result;
+		}
+		return true;
+	default:
+		return false;
+	}
+}
 
 int main(int argc, char **argv)
 {
@@ -36,8 +80,6 @@ int main(int argc, char **argv)
 	while (mem_read_inst(comp.pc, &inst))
 	{
 		comp.pc += 2;
-		for (size_t i = 0; i < 4; ++i)
-			oper[i] = 0;
 		fprintf(stderr, "%04x ", inst);
 		uint8_t opcode1 = (inst >> 8) & 0xFF;
 		enum InstructionPack pack = opcode1_pack_table[opcode1];
@@ -48,8 +90,12 @@ int main(int argc, char **argv)
 			exit(-1);
 		}
 		unpack_inst(inst, pack, _template, &instParams);
+		if (fetchOper() == false)
+		{
+			fprintf(stderr, "Operand is not found\n");
+			exit(-1);
+		}
 
-		// get total inst len
 		// jump to execution function do_
 	}
 	fprintf(stderr, "\n");
