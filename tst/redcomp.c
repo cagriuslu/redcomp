@@ -4,10 +4,8 @@
 #include "redcomp/common/instruction.h"
 #include <stdio.h>
 
-#define MAC_OPERLEN (4)
-
 uint16_t inst;
-uint16_t oper[MAC_OPERLEN];
+uint16_t oper[4];
 struct InstructionParameters instParams;
 
 int main(int argc, char **argv)
@@ -17,6 +15,7 @@ int main(int argc, char **argv)
 
 	comp_init();
 	build_opcode1_pack_table();
+	build_opcode1_template_table();
 	mem_init();
 	if (mem_create(0) == NULL)
 		return -1;
@@ -37,15 +36,21 @@ int main(int argc, char **argv)
 	while (mem_read_inst(comp.pc, &inst))
 	{
 		comp.pc += 2;
+		for (size_t i = 0; i < 4; ++i)
+			oper[i] = 0;
 		fprintf(stderr, "%04x ", inst);
 		uint8_t opcode1 = (inst >> 8) & 0xFF;
 		enum InstructionPack pack = opcode1_pack_table[opcode1];
-		if (pack == IP_UNKNOWN)
+		enum InstructionTemplate _template = opcode1_template_table[opcode1];
+		if (pack == IP_UNKNOWN || _template == IT_UNKNOWN)
 		{
 			fprintf(stderr, "Unknown instruction\n");
 			exit(-1);
 		}
-		unpack_inst(inst, pack, &instParams);
+		unpack_inst(inst, pack, _template, &instParams);
+
+		// get total inst len
+		// jump to execution function do_
 	}
 	fprintf(stderr, "\n");
 
