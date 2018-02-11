@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../common/instruction.h"
+#include "redcomp/common/instruction.h"
 #include "comp.h"
 #include "mem.h"
 

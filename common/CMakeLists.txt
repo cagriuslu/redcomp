@@ -1,0 +1,7 @@
+cmake_minimum_required(VERSION 3.10)
+project(redcomp_common)
+set(CMAKE_C_STANDARD 11)
+set(CMAKE_CXX_STANDARD 11)
+file(GLOB SOURCES "src/*")
+add_library(redcomp_common STATIC ${SOURCES})
+target_include_directories(redcomp_common PUBLIC inc)
