@@ -1,84 +1,91 @@
 #include "redcomp/comp/utils.h"
+#include "redcomp/comp/globals.h"
 
-enum InstructionPack *opcode1_pack_table;
-
-int build_opcode1_pack_table()
+bool build_lookup_tables()
 {
+	// allocate tables
 	opcode1_pack_table = malloc(256 * sizeof(enum InstructionPack));
-	if (opcode1_pack_table == NULL)
-		return -1;
-	for (size_t i = 0; i < 256; ++i)
-	{
-		if (i < instructionCount)
-			opcode1_pack_table[i] = instructions[i].pack;
-		else
-			opcode1_pack_table[i] = IP_UNKNOWN;
-	}
-	return 0;
-}
-
-enum InstructionTemplate *opcode1_template_table;
-
-int build_opcode1_template_table()
-{
+	if (!opcode1_pack_table)
+		return false;
 	opcode1_template_table = malloc(256 * sizeof(enum InstructionTemplate));
-	if (opcode1_template_table == NULL)
-		return -1;
+	if (!opcode1_template_table)
+		return false;
+
+	// initialize tables
 	for (size_t i = 0; i < 256; ++i)
 	{
 		if (i < instructionCount)
+		{
+			opcode1_pack_table[i] = instructions[i].pack;
 			opcode1_template_table[i] = instructions[i]._template;
+		}
 		else
+		{
+			opcode1_pack_table[i] = IP_UNKNOWN;
 			opcode1_template_table[i] = IT_UNKNOWN;
+		}
 	}
-	return 0;
+	return true;
 }
 
-void unpack_inst(uint16_t inst, enum InstructionPack pack, enum InstructionTemplate _template, struct InstructionParameters *params)
+bool fetch_next_inst()
 {
-	params->opcode1 = 0;
-	params->opcode2 = 0;
-	params->nfbits = 0;
-	params->instlen = 0;
-	params->stk1 = 0;
-	params->stk2 = 0;
-	params->idx1 = 0;
-	params->idx2 = 0;
-	params->reg = 0;
-	params->shfcnt = 0;
-	params->inccnt = 0;
-	params->integer = 0;
-	params->unsigned16 = 0;
-	params->signed16 = 0;
-	params->floating = 0.0;
+	if (mem_read_16_big(pc, &fetched_inst))
+	{
+		pc += 2;
+		return true;
+	}
+	else
+		return false;
+}
 
+bool unpack_inst_params()
+{
+	fetched_inst_params.opcode1 = (fetched_inst >> 8) & 0xFF;
+	fetched_inst_params.opcode2 = 0;
+	fetched_inst_params.nfbits = 0;
+	fetched_inst_params.instlen = 0;
+	fetched_inst_params.stk1 = 0;
+	fetched_inst_params.stk2 = 0;
+	fetched_inst_params.idx1 = 0;
+	fetched_inst_params.idx2 = 0;
+	fetched_inst_params.reg = 0;
+	fetched_inst_params.shfcnt = 0;
+	fetched_inst_params.inccnt = 0;
+	fetched_inst_params.integer = 0;
+	fetched_inst_params.unsigned16 = 0;
+	fetched_inst_params.signed16 = 0;
+	fetched_inst_params.floating = 0.0;
+
+	pack = opcode1_pack_table[fetched_inst_params.opcode1];
 	if ((pack & IF_MG1C_FF00) == IF_MG1C_FF00)
-		params->opcode1 = (inst & 0xFF00) >> 8;
+		fetched_inst_params.opcode1 = (fetched_inst & 0xFF00) >> 8;
 	if ((pack & IF_NBITS_00C0) == IF_NBITS_00C0)
-		params->nfbits = (inst & 0x00C0) >> 6;
+		fetched_inst_params.nfbits = (fetched_inst & 0x00C0) >> 6;
 	if ((pack & IF_ILEN_0030) == IF_ILEN_0030)
-		params->instlen = (inst & 0x0030) >> 4;
+		fetched_inst_params.instlen = (fetched_inst & 0x0030) >> 4;
 	if ((pack & IF_IX1_0030) == IF_IX1_0030)
-		params->idx1 = (inst & 0x0030) >> 4;
+		fetched_inst_params.idx1 = (fetched_inst & 0x0030) >> 4;
 	if ((pack & IF_IX2_000C) == IF_IX2_000C)
-		params->idx2 = (inst & 0x000C) >> 2;
+		fetched_inst_params.idx2 = (fetched_inst & 0x000C) >> 2;
 	if ((pack & IF_IX1_000C) == IF_IX1_000C)
-		params->idx1 = (inst & 0x000C) >> 2;
+		fetched_inst_params.idx1 = (fetched_inst & 0x000C) >> 2;
 	if ((pack & IF_SX1_0003) == IF_SX1_0003)
-		params->stk1 = (inst & 0x0003);
+		fetched_inst_params.stk1 = (fetched_inst & 0x0003);
 	if ((pack & IF_SX1_000C) == IF_SX1_000C)
-		params->stk1 = (inst & 0x000C) >> 2;
+		fetched_inst_params.stk1 = (fetched_inst & 0x000C) >> 2;
 	if ((pack & IF_SX2_0003) == IF_SX2_0003)
-		params->stk2 = (inst & 0x0003);
+		fetched_inst_params.stk2 = (fetched_inst & 0x0003);
 	if ((pack & IF_REG_003C) == IF_REG_003C)
-		params->reg = (inst & 0x003C) >> 2;
+		fetched_inst_params.reg = (fetched_inst & 0x003C) >> 2;
 	if ((pack & IF_SHFCNT_003C) == IF_SHFCNT_003C)
-		params->shfcnt = (inst & 0x003C) >> 2;
+		fetched_inst_params.shfcnt = (fetched_inst & 0x003C) >> 2;
 	if ((pack & IF_INCCNT_003C) == IF_INCCNT_003C)
-		params->inccnt = (inst & 0x003C) >> 2;
+		fetched_inst_params.inccnt = (fetched_inst & 0x003C) >> 2;
 	if ((pack & IF_INCCNT_000F) == IF_INCCNT_000F)
-		params->inccnt = (inst & 0x000F);
+		fetched_inst_params.inccnt = (fetched_inst & 0x000F);
 
+	_template = opcode1_template_table[fetched_inst_params.opcode1];
 	switch (_template)
 	{
 	case IT_NBITS__IX__INT:
@@ -114,7 +121,7 @@ void unpack_inst(uint16_t inst, enum InstructionPack pack, enum InstructionTempl
 	case IT_NBITS__SX__IX:
 	case IT___INCCNT:
 	case IT___SX:
-		params->instlen = IL_1x16;
+		fetched_inst_params.instlen = IL_1x16;
 		break;
 	case IT_NBITS__IX__B_VI_U16_B:
 	case IT_NBITS__IX__B_IX_I16_B:
@@ -124,9 +131,44 @@ void unpack_inst(uint16_t inst, enum InstructionPack pack, enum InstructionTempl
 	case IT___IX_I16:
 	case IT___B_VI_U16_B:
 	case IT___B_IX_I16_B:
-		params->instlen = IL_2x16;
+		fetched_inst_params.instlen = IL_2x16;
 		break;
 	default:
-		params->instlen = IL_1x16;
+		return false;
 	}
+	return true;
+}
+
+bool fetch_opers()
+{
+	for (size_t i = 0; i < 8; ++i)
+		fetched_opers[i] = 0;
+
+	size_t byte_count;
+	switch (fetched_inst_params.instlen)
+	{
+	case IL_1x16:
+		byte_count = 0;
+		break;
+	case IL_2x16:
+		byte_count = 2;
+		break;
+	case IL_3x16:
+		byte_count = 4;
+		break;
+	case IL_5x16:
+		byte_count = 8;
+		break;
+	default:
+		return false;
+	}
+
+	for (size_t i = 0; i < 2; ++i)
+	{
+		int result = mem_read(pc++);
+		if (result == -1)
+			return false;
+		fetched_opers[i] = result;
+	}
+	return true;
 }

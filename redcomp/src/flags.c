@@ -1,13 +1,14 @@
 #include "redcomp/comp/flags.h"
+#include "redcomp/comp/globals.h"
 
-void flags_init(flags_t *p)
+void flags_init()
 {
-	p->carry = 0;
-	p->zero = 0;
-	p->overflow = 0;
-	p->strdir = 0;
-	p->sign = 0;
-	p->parity = 0;
-	p->less = 0;
-	p->greater = 0;
+	flags.carry = 0;
+	flags.zero = 0;
+	flags.overflow = 0;
+	flags.strdir = 0;
+	flags.sign = 0;
+	flags.parity = 0;
+	flags.less = 0;
+	flags.greater = 0;
 }

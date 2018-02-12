@@ -1,162 +1,205 @@
 #include "redcomp/comp/mem.h"
+#include "redcomp/comp/globals.h"
 
 #define LVL1_OFF(addr) ((addr >> 48) & 0xFFFF)
 #define LVL2_OFF(addr) ((addr >> 32) & 0xFFFF)
 #define LVL3_OFF(addr) ((addr >> 16) & 0xFFFF)
 #define LVL4_OFF(addr) (addr & 0xFFFF)
 
-seg_tab_t seg_tab_lvl1;
-
-void seg_tab_init(seg_tab_t *tab)
+page_t* mem_access(uint64_t address)
 {
-	for (size_t i = 0; i < 65536; ++i)
-		tab->entry[i].tab = NULL;
-}
-
-void seg_init(seg_t *seg)
-{
-	for (size_t i = 0; i < 65536; ++i)
-		seg->buf[i] = 0;
-}
-
-void mem_init()
-{
-	seg_tab_init(&seg_tab_lvl1);
-}
-
-seg_t* mem_check(uint64_t addr)
-{
-	seg_tab_t *seg_tab_lvl2 = seg_tab_lvl1.entry[LVL1_OFF(addr)].tab;
-	if (seg_tab_lvl2 == NULL)
+	page_table_t *pt_lvl2 = pt_lvl1.entry[LVL1_OFF(address)].child_table;
+	if (!pt_lvl2)
 		return NULL;
 
-	seg_tab_t *seg_tab_lvl3 = seg_tab_lvl2->entry[LVL2_OFF(addr)].tab;
-	if (seg_tab_lvl3 == NULL)
+	page_table_t *pt_lvl3 = pt_lvl2->entry[LVL2_OFF(address)].child_table;
+	if (!pt_lvl3)
 		return NULL;
 
-	seg_t *seg = seg_tab_lvl3->entry[LVL3_OFF(addr)].seg;
-	return seg;
+	page_t *p = pt_lvl3->entry[LVL3_OFF(address)].page;
+	return p;
 }
 
-seg_t* mem_create(uint64_t addr)
+page_t* mem_create(uint64_t address)
 {
-	seg_t *seg = mem_check(addr);
-	if (seg)
+	page_t *p = mem_access(address);
+	if (p)
 	{
-		seg_init(seg);
-		return seg;
+		memset(p->buffer, 0, 65536);
+		return p;
 	}
 
-	seg_tab_t *seg_tab_lvl2 = seg_tab_lvl1.entry[LVL1_OFF(addr)].tab;
-	if (seg_tab_lvl2 == NULL)
+	page_table_t *pt_lvl2 = pt_lvl1.entry[LVL1_OFF(address)].child_table;
+	if (!pt_lvl2)
 	{
-		seg_tab_lvl2 = malloc(sizeof(seg_tab_t));
-		if (seg_tab_lvl2 == NULL)
+		pt_lvl2 = calloc(1, sizeof(page_table_t));
+		if (!pt_lvl2)
 			return NULL;
-		seg_tab_init(seg_tab_lvl2);
-		seg_tab_lvl1.entry[LVL1_OFF(addr)].tab = seg_tab_lvl2;
+		pt_lvl1.entry[LVL1_OFF(address)].child_table = pt_lvl2;
 	}
 
-	seg_tab_t *seg_tab_lvl3 = seg_tab_lvl2->entry[LVL2_OFF(addr)].tab;
-	if (seg_tab_lvl3 == NULL)
+	page_table_t *pt_lvl3 = pt_lvl2->entry[LVL2_OFF(address)].child_table;
+	if (!pt_lvl3)
 	{
-		seg_tab_lvl3 = malloc(sizeof(seg_tab_t));
-		if (seg_tab_lvl3 == NULL)
+		pt_lvl3 = calloc(1, sizeof(page_table_t));
+		if (!pt_lvl3)
 			return NULL;
-		seg_tab_init(seg_tab_lvl3);
-		seg_tab_lvl2->entry[LVL2_OFF(addr)].tab = seg_tab_lvl3;
+		pt_lvl2->entry[LVL2_OFF(address)].child_table = pt_lvl3;
 	}
 
-	seg = seg_tab_lvl3->entry[LVL3_OFF(addr)].seg;
-	if (seg == NULL)
+	p = pt_lvl3->entry[LVL3_OFF(address)].page;
+	if (!p)
 	{
-		seg = malloc(sizeof(seg_t));
-		if (seg == NULL)
+		p = calloc(1, sizeof(page_t));
+		if (!p)
 			return NULL;
-		seg_init(seg);
-		seg_tab_lvl3->entry[LVL3_OFF(addr)].seg = seg;
+		pt_lvl3->entry[LVL3_OFF(address)].page = p;
 	}
 
-	return seg;
+	return p;
 }
 
-void mem_destroy(uint64_t addr)
+void mem_destroy(uint64_t address)
 {
-	seg_t *seg = mem_check(addr);
-	if (seg == NULL)
-		return;
-
-	seg_tab_t *seg_tab_lvl3 = seg_tab_lvl1.entry[LVL1_OFF(addr)].tab->entry[LVL2_OFF(addr)].tab;
-	free(seg_tab_lvl3->entry[LVL3_OFF(addr)].seg);
-	seg_tab_lvl3->entry[LVL3_OFF(addr)].seg = NULL;
+	page_t *p = mem_access(address);
+	if (p)
+	{
+		page_table_t *pt_lvl2 = pt_lvl1.entry[LVL1_OFF(address)].child_table;
+		page_table_t *pt_lvl3 = pt_lvl2->entry[LVL2_OFF(address)].child_table;
+		free(pt_lvl3->entry[LVL3_OFF(address)].page);
+		pt_lvl3->entry[LVL3_OFF(address)].page = NULL;
+	}
 }
 
-int mem_read(uint64_t addr)
+int mem_read(uint64_t address)
 {
-	seg_t* seg = mem_check(addr);
-	if (seg)
-		return seg->buf[LVL4_OFF(addr)];
+	page_t *p = mem_access(address);
+	return mem_read_ex(p, address);
+}
+
+int mem_read_ex(page_t *page, uint64_t address)
+{
+	if (page)
+		return page->buffer[LVL4_OFF(address)];
 	else
 		return -1;
 }
 
-int mem_read_ex(seg_t *seg, uint64_t addr)
+int mem_write(uint64_t address, uint8_t value)
 {
-	if (seg)
-		return seg->buf[LVL4_OFF(addr)];
-	else
-		return -1;
+	page_t *p = mem_access(address);
+	return mem_write_ex(p, address, value);
 }
 
-int mem_write(uint64_t addr, uint8_t val)
+int mem_write_ex(page_t *page, uint64_t address, uint8_t value)
 {
-	seg_t* seg = mem_check(addr);
-	if (seg)
+	if (page)
 	{
-		seg->buf[LVL4_OFF(addr)] = val;
-		return val;
+		page->buffer[LVL4_OFF(address)] = value;
+		return value;
 	}
 	else
 		return -1;
 }
 
-bool mem_dump(uint64_t addr)
+int mem_dump(uint64_t address)
 {
-	seg_t *seg = mem_check(addr);
-	if (seg == NULL)
-		return false;
-	fprintf(stderr, "Dumping page %016llx\n", addr);
-	for (size_t i = 0; i < 65536; ++i)
-		fprintf(stderr, "%02x ", seg->buf[i]);
+	page_t *p = mem_access(address);
+	if (!p)
+		return -1;
+
+	fprintf(stderr, "Dumping page starting from address %016llx\n", address);
+	for (size_t i = LVL4_OFF(address); i < 65536; ++i)
+		fprintf(stderr, "%02x ", p->buffer[i]);
 	fprintf(stderr, "\n");
-	return true;
+	return 0;
 }
 
-bool mem_read_inst(uint64_t addr, uint16_t *out)
+bool mem_read_16_big(uint64_t address, uint16_t *out)
 {
 	uint16_t tmp = 0;
-
-	// check if addr spans more than one segment
-	uint64_t seg1 = addr / 65536;
-	uint64_t seg2 = (addr+1) / 65536;
-	if (seg1 == seg2)
+	size_t byte_count = 2;
+	for (size_t i = 0; i < byte_count; ++i)
 	{
-		seg_t *seg = mem_check(addr);
-		if (seg == NULL)
+		int byte = mem_read(address + i);
+		if (byte == -1)
 			return false;
-		tmp = mem_read_ex(seg, addr) << 8;
-		tmp |= mem_read_ex(seg, addr+1);
+		tmp |= byte << (8 * (byte_count - 1 - i));
 	}
-	else
+	if (out)
+		*out = tmp;
+	return true;
+}
+bool mem_read_32_big(uint64_t address, uint32_t *out)
+{
+	uint32_t tmp = 0;
+	size_t byte_count = 4;
+	for (size_t i = 0; i < byte_count; ++i)
 	{
-		seg_t *seg1 = mem_check(addr);
-		if (seg1 == NULL)
+		int byte = mem_read(address + i);
+		if (byte == -1)
 			return false;
-		seg_t *seg2 = mem_check(addr+1);
-		if (seg2 == NULL)
+		tmp |= byte << (8 * (byte_count - 1 - i));
+	}
+	if (out)
+		*out = tmp;
+	return true;
+}
+bool mem_read_64_big(uint64_t address, uint64_t *out)
+{
+	uint64_t tmp = 0;
+	size_t byte_count = 8;
+	for (size_t i = 0; i < byte_count; ++i)
+	{
+		int byte = mem_read(address + i);
+		if (byte == -1)
 			return false;
-		tmp = mem_read_ex(seg1, addr) << 8;
-		tmp |= mem_read_ex(seg2, addr+1);
+		tmp |= byte << (8 * (byte_count - 1 - i));
+	}
+	if (out)
+		*out = tmp;
+	return true;
+}
+bool mem_read_16_little(uint64_t address, uint16_t *out)
+{
+	uint16_t tmp = 0;
+	size_t byte_count = 2;
+	for (size_t i = 0; i < byte_count; ++i)
+	{
+		int byte = mem_read(address + i);
+		if (byte == -1)
+			return false;
+		tmp |= byte << (8 * i);
+	}
+	if (out)
+		*out = tmp;
+	return true;
+}
+bool mem_read_32_little(uint64_t address, uint32_t *out)
+{
+	uint32_t tmp = 0;
+	size_t byte_count = 4;
+	for (size_t i = 0; i < byte_count; ++i)
+	{
+		int byte = mem_read(address + i);
+		if (byte == -1)
+			return false;
+		tmp |= byte << (8 * i);
+	}
+	if (out)
+		*out = tmp;
+	return true;
+}
+bool mem_read_64_little(uint64_t address, uint64_t *out)
+{
+	uint64_t tmp = 0;
+	size_t byte_count = 8;
+	for (size_t i = 0; i < byte_count; ++i)
+	{
+		int byte = mem_read(address + i);
+		if (byte == -1)
+			return false;
+		tmp |= byte << (8 * i);
 	}
 	if (out)
 		*out = tmp;
