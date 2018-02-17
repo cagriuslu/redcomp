@@ -102,19 +102,6 @@ int mem_write_ex(page_t *page, uint64_t address, uint8_t value)
 		return -1;
 }
 
-int mem_dump(uint64_t address)
-{
-	page_t *p = mem_access(address);
-	if (!p)
-		return -1;
-
-	fprintf(stderr, "Dumping page starting from address %016llx\n", address);
-	for (size_t i = LVL4_OFF(address); i < 65536; ++i)
-		fprintf(stderr, "%02x ", p->buffer[i]);
-	fprintf(stderr, "\n");
-	return 0;
-}
-
 bool mem_read_16_big(uint64_t address, uint16_t *out)
 {
 	uint16_t tmp = 0;
@@ -134,21 +121,6 @@ bool mem_read_32_big(uint64_t address, uint32_t *out)
 {
 	uint32_t tmp = 0;
 	size_t byte_count = 4;
-	for (size_t i = 0; i < byte_count; ++i)
-	{
-		int byte = mem_read(address + i);
-		if (byte == -1)
-			return false;
-		tmp |= byte << (8 * (byte_count - 1 - i));
-	}
-	if (out)
-		*out = tmp;
-	return true;
-}
-bool mem_read_64_big(uint64_t address, uint64_t *out)
-{
-	uint64_t tmp = 0;
-	size_t byte_count = 8;
 	for (size_t i = 0; i < byte_count; ++i)
 	{
 		int byte = mem_read(address + i);
@@ -190,18 +162,28 @@ bool mem_read_32_little(uint64_t address, uint32_t *out)
 		*out = tmp;
 	return true;
 }
-bool mem_read_64_little(uint64_t address, uint64_t *out)
+bool mem_write_32_little(uint32_t address, uint32_t value)
 {
-	uint64_t tmp = 0;
-	size_t byte_count = 8;
+	uint8_t tmp;
+	size_t byte_count = 4;
 	for (size_t i = 0; i < byte_count; ++i)
 	{
-		int byte = mem_read(address + i);
-		if (byte == -1)
+		tmp = value >> (8*i);
+		if (mem_write(address + i, tmp) == -1)
 			return false;
-		tmp |= byte << (8 * i);
 	}
-	if (out)
-		*out = tmp;
 	return true;
+}
+
+int mem_dump(uint64_t address)
+{
+	page_t *p = mem_access(address);
+	if (!p)
+		return -1;
+
+	fprintf(stderr, "Dumping page starting from address %016llx\n", address);
+	for (size_t i = LVL4_OFF(address); i < 65536; ++i)
+		fprintf(stderr, "%02x ", p->buffer[i]);
+	fprintf(stderr, "\n");
+	return 0;
 }

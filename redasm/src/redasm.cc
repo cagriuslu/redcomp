@@ -10,6 +10,27 @@
 #include <string>
 #include <vector>
 
+#define PUSH_NOP() \
+	do { \
+		std::cerr << "Pushing nop instruction for alignment" << std::endl; \
+		std::vector<uint8_t> tmp = {0x00, 0x00}; \
+		segmentStorage.insert(tmp); \
+		currentAddress += 2; \
+		halfInst = false; \
+	} while (0)
+
+void print32(uint32_t n)
+{
+	uint8_t tmp = n;
+	printf("%c", tmp);
+	tmp = n >> 8;
+	printf("%c", tmp);
+	tmp = n >> 16;
+	printf("%c", tmp);
+	tmp = n >> 24;
+	printf("%c", tmp);
+}
+
 int main(int argc, char **argv)
 {
 	(void) argc;
@@ -25,11 +46,12 @@ int main(int argc, char **argv)
 
 	std::string line;
 	size_t lineNo = 0;
+	bool halfInst = false;
 	while (std::getline(std::cin, line))
 	{
 		++lineNo;
 
-		std::cerr << "parsing:" << line << std::endl;
+//		std::cerr << "parsing:" << line << std::endl;
 		// trim
 		redcomp::Utils::trimRight(line);
 		redcomp::Utils::trimLeft(line);
@@ -42,10 +64,23 @@ int main(int argc, char **argv)
 
 		if (redcomp::LabelStorage::isLabel(line))
 		{
-			labelStorage.insert(line, currentAddress);
+//			if (halfInst)
+//			{
+//				PUSH_NOP();
+//			}
+//
+//			labelStorage.insert(line, currentAddress);
+
+			std::cerr << "Labels are not yet implemented" << std::endl;
+			exit(-1);
 		}
 		else if (redcomp::Address::isAddress(line))
 		{
+			if (halfInst)
+			{
+				PUSH_NOP();
+			}
+
 			uint64_t newAddress = redcomp::Address::getAddress(line);
 			segmentStorage.createNew(newAddress);
 			currentAddress = newAddress;
@@ -61,15 +96,55 @@ int main(int argc, char **argv)
 		}
 		else
 		{
+			// TODO implement LABEL parsing
 			auto result = redcomp::Instruction::parse(line);
 			if (result.first)
 			{
+				if (halfInst && result.second.size() == 4)
+				{
+					PUSH_NOP();
+				}
+
 				segmentStorage.insert(result.second);
 				currentAddress += result.second.size();
 
-				for (size_t i = 0; i < result.second.size(); ++i)
-					printf("%c", result.second[i]);
+				if (halfInst == false && result.second.size() == 2)
+					halfInst = true;
+				else
+					halfInst = false;
 			}
+			else
+			{
+				std::cerr << "Error on line " << lineNo << std::endl;
+				exit(-1);
+			}
+		}
+	}
+
+	if (halfInst)
+	{
+		PUSH_NOP();
+	}
+
+	// print segment table entry count
+	print32(segmentStorage.segments.size());
+
+	// print segment table entries
+	for (size_t i = 0; i < segmentStorage.segments.size(); ++i)
+	{
+		// print segment start address 32-bits
+		print32(segmentStorage.segments[i].first);
+
+		// print segment length 32-bits
+		print32(segmentStorage.segments[i].second.size());
+	}
+
+	// print segments
+	for (size_t i = 0; i < segmentStorage.segments.size(); ++i)
+	{
+		for (size_t j = 0; j < segmentStorage.segments[i].second.size(); ++j)
+		{
+			printf("%c", segmentStorage.segments[i].second[j]);
 		}
 	}
 

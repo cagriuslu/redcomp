@@ -8,6 +8,7 @@ namespace redcomp
 {
 	class SegmentStorage
 	{
+	public:
 		std::vector< std::pair< uint64_t,std::vector<uint8_t> > > segments;
 	public:
 		void createNew(uint64_t);

@@ -3,23 +3,17 @@
 #include "redcomp/common/instruction.h"
 
 // Machine state
-extern stk_t sx[4];
-extern uint64_t ix[4];
-extern uint64_t pc;
-extern uint64_t vi;
+extern stk_t stk[4];
+extern regs_t regs;
 extern flags_t flags;
 
 // Memory
 extern page_table_t pt_lvl1;
 
 // Internal state
-extern uint16_t fetched_inst;
-extern uint8_t fetched_opers[8];
-extern size_t fetched_oper_count;
 extern struct InstructionParameters fetched_inst_params;
-extern enum InstructionPack pack;
-extern enum InstructionTemplate _template;
+extern size_t skip_counter; // skip if counter is 1
 
 // Lookup tables
-extern enum InstructionPack *opcode1_pack_table;
-extern enum InstructionTemplate *opcode1_template_table;
+extern enum InstructionType *magic_to_type_table;
+extern enum InstructionField *magic_to_fields_table;

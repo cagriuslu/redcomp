@@ -1,9 +1,6 @@
 #pragma once
 #include "defs.h"
 
-void mem_init();
-void mem_page_table_init(page_table_t *pt);
-void mem_page_init(page_t *p);
 page_t* mem_access(uint64_t address);
 page_t* mem_create(uint64_t address);
 void mem_destroy(uint64_t address);
@@ -20,6 +17,7 @@ bool mem_read_64_big(uint64_t address, uint64_t *out);
 bool mem_read_16_little(uint64_t address, uint16_t *out);
 bool mem_read_32_little(uint64_t address, uint32_t *out);
 bool mem_read_64_little(uint64_t address, uint64_t *out);
+bool mem_write_32_little(uint32_t address, uint32_t value);
 
 // Debug
 int mem_dump(uint64_t address);

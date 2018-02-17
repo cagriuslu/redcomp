@@ -4,8 +4,9 @@
 #include "flags.h"
 #include "globals.h"
 #include "mem.h"
+#include "stk.h"
 
 bool build_lookup_tables();
 bool fetch_next_inst();
-bool unpack_inst_params();
-bool fetch_opers();
+
+extern int (*do_funcs[])();

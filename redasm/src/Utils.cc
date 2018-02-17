@@ -70,21 +70,24 @@ uint64_t redcomp::Utils::strToU64(std::string s)
 	}
 	s = s.substr(i);
 
-	if (2 < s.length() && (s[1] == 'h' || s[1] == 'H'))
+	uint64_t n;
+	if (2 < s.length() && (s[1] == 'x' || s[1] == 'X'))
 	{
 		// parse as hex
 		s = s.substr(2);
-		return std::stoull(s, 0, 16);
+		n = std::stoull(s, 0, 16);
 	}
 	else if (2 < s.length() && (s[1] == 'b' || s[1] == 'B'))
 	{
 		// parse as bin
 		s = s.substr(2);
-		return std::stoull(s, 0, 2);
+		n = std::stoull(s, 0, 2);
 	}
 	else
 	{
 		// parse as dec
-		return std::stoull(s, 0, 10);
+		n = std::stoull(s, 0, 10);
 	}
+
+	return negative ? -n : n;
 }

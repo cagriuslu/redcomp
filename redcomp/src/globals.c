@@ -1,19 +1,20 @@
 #include "redcomp/comp/globals.h"
 
-stk_t sx[4];
-uint64_t ix[4];
-uint64_t pc;
-uint64_t vi;
+
+
+// Machine state
+stk_t stk[4];
+regs_t regs;
 flags_t flags;
 
+// Memory
 page_table_t pt_lvl1;
 
-uint16_t fetched_inst;
-uint8_t fetched_opers[8];
-size_t fetched_oper_count;
+// Internal state
 struct InstructionParameters fetched_inst_params;
-enum InstructionPack pack;
-enum InstructionTemplate _template;
+size_t skip_counter;
 
-enum InstructionPack *opcode1_pack_table;
-enum InstructionTemplate *opcode1_template_table;
+// Lookup tables
+enum InstructionType *magic_to_type_table;
+enum InstructionField *magic_to_fields_table;
+
